@@ -7,9 +7,11 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.Base64;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Test;
 
 /* Added some basic test; token generator needs to be refactored to accept
@@ -40,10 +42,10 @@ Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
 public class BasicTokenGeneratorTest {
 	
 	private final String FIREBASE_SUPER_SECRET_KEY = "moozooherpderp";
-	
+
 	@Test
 	public void checkIfBasicLength() {
-		JSONObject payload = new JSONObject();
+		ObjectNode payload = new ObjectNode(JsonNodeFactory.instance);
 		
 		TokenGenerator tokenGenerator = new TokenGenerator("x");
 		String token = tokenGenerator.createToken(payload);
@@ -54,7 +56,7 @@ public class BasicTokenGeneratorTest {
 	
 	@Test
 	public void checkBasicStructureHasCorrectNumberOfFragments() {
-		JSONObject payload = new JSONObject();
+    ObjectNode payload = new ObjectNode(JsonNodeFactory.instance);
 		try {
 			payload.put("abc", "0123456789~!@#$%^&*()_+-=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./;'[]\\<>?\"{}|");
 		} catch (Exception e) {
@@ -71,7 +73,7 @@ public class BasicTokenGeneratorTest {
 	
 	@Test
 	public void checkIfResultProperlyDoesNotHavePadding() {
-		JSONObject payload = new JSONObject();
+    ObjectNode payload = new ObjectNode(JsonNodeFactory.instance);
 		try {
 			payload.put("abc", "0123456789~!@#$%^&*()_+-=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./;'[]\\<>?\"{}|");
 		} catch (Exception e) {
@@ -86,7 +88,7 @@ public class BasicTokenGeneratorTest {
 	
 	@Test
 	public void checkIfResultIsUrlSafePlusSign() {
-		JSONObject payload = new JSONObject();
+    ObjectNode payload = new ObjectNode(JsonNodeFactory.instance);
 		try {
 			payload.put("abc", "0123456789~!@#$%^&*()_+-=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./;'[]\\<>?\"{}|");
 		} catch (Exception e) {
@@ -101,7 +103,7 @@ public class BasicTokenGeneratorTest {
 
 	@Test
 	public void checkIfResultIsUrlSafePlusSlash() {
-		JSONObject payload = new JSONObject();
+    ObjectNode payload = new ObjectNode(JsonNodeFactory.instance);
 		try {
 			payload.put("abc", "0123456789~!@#$%^&*()_+-=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./;'[]\\<>?\"{}|");
 		} catch (Exception e) {
@@ -116,7 +118,7 @@ public class BasicTokenGeneratorTest {
 
 	@Test
 	public void checkIfResultHasWhiteSpace() {
-		JSONObject payload = new JSONObject();
+    ObjectNode payload = new ObjectNode(JsonNodeFactory.instance);
 		try {
 			payload.put("a", "apple");
 	        payload.put("b", "banana");
@@ -150,7 +152,10 @@ public class BasicTokenGeneratorTest {
 	@Test
 	public void basicInspectionTest() {
 		String customData = "0123456789~!@#$%^&*()_+-=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./;'[]\\<>?\"{}|";
-		JSONObject payload = new JSONObject();
+    ObjectMapper mapper = new ObjectMapper();
+    JsonFactory jsonFactory = mapper.getFactory();
+
+    ObjectNode payload = new ObjectNode(JsonNodeFactory.instance);
 		try {
 			payload.put("abc", customData);
 		} catch (Exception e) {
@@ -175,25 +180,25 @@ public class BasicTokenGeneratorTest {
 		}
 				
 		try {
-			JSONObject jsonHeader = new JSONObject(header);
-			assertEquals("Got alg", "HS256", jsonHeader.get("alg"));
-			assertEquals("Got typ", "JWT", jsonHeader.get("typ"));
-		} catch (JSONException e) {
+			ObjectNode jsonHeader = (ObjectNode) mapper.readTree(header);
+			assertEquals("Got alg", "HS256", jsonHeader.get("alg").asText());
+			assertEquals("Got typ", "JWT", jsonHeader.get("typ").asText());
+		} catch (Exception e) {
 			fail(e.getMessage());
 		}
 		
 		try {
-			JSONObject jsonClaims = new JSONObject(claims);
-			assertEquals("Got version", 0, jsonClaims.get("v"));
+			ObjectNode jsonClaims = (ObjectNode) mapper.readTree(claims);// jsonFactory.createParser(claims).readValueAsTree();
+			assertEquals("Got version", 0, jsonClaims.get("v").asInt());
 			
-			JSONObject jsonData = jsonClaims.getJSONObject("d");
-			assertEquals("Got data", customData, jsonData.get("abc"));
-			assertNotNull("Got some exp", jsonClaims.getLong("exp"));
-			assertNotNull("Got some iat", jsonClaims.getLong("iat"));
-			assertNotNull("Got some nbf", jsonClaims.getLong("nbf"));
-			assertTrue("Admin", jsonClaims.getBoolean("admin"));
-			assertTrue("Debug", jsonClaims.getBoolean("debug"));
-		} catch (JSONException e) {
+			ObjectNode jsonData = (ObjectNode) jsonClaims.get("d");
+			assertEquals("Got data", customData, jsonData.get("abc").asText());
+			assertNotNull("Got some exp", jsonClaims.get("exp"));
+			assertNotNull("Got some iat", jsonClaims.get("iat"));
+			assertNotNull("Got some nbf", jsonClaims.get("nbf"));
+			assertTrue("Admin", jsonClaims.get("admin").asBoolean());
+			assertTrue("Debug", jsonClaims.get("debug").asBoolean());
+		} catch (Exception e) {
 			fail(e.getMessage());
 		}
 	}

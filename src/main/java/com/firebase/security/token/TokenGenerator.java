@@ -1,9 +1,9 @@
 package com.firebase.security.token;
 
-import java.util.Date;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.util.Date;
 
 /**
  * Firebase JWT token generator.
@@ -33,7 +33,7 @@ public class TokenGenerator {
 	 * @param data
 	 * @return
 	 */
-	public String createToken(JSONObject data) {
+	public String createToken(ObjectNode data) {
 		return createToken(data, new TokenOptions());
 	}
 	
@@ -44,14 +44,14 @@ public class TokenGenerator {
 	 * @param options
 	 * @return
 	 */
-	public String createToken(JSONObject data, TokenOptions options) {
-		JSONObject claims = new JSONObject();
-		
+	public String createToken(ObjectNode data, TokenOptions options) {
+    ObjectNode claims = new ObjectNode(JsonNodeFactory.instance);
+
 		try {
 			claims.put("v", TOKEN_VERSION);
 			claims.put("iat", new Date().getTime() / 1000);
 			
-			if(data != null && data.length() > 0) {
+			if(data != null && data.size() > 0) {
 				claims.put("d", data);
 			}
 			
@@ -74,14 +74,14 @@ public class TokenGenerator {
 					claims.put("debug", options.isDebug());	
 				}
 			}
-		} catch (JSONException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
 		return computeToken(claims);
 	}
 
-	private String computeToken(JSONObject claims) {
+	private String computeToken(ObjectNode claims) {
 		return JWTEncoder.encode(claims, firebaseSecret);
 	}
 }

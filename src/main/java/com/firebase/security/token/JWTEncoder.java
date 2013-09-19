@@ -5,9 +5,9 @@ import java.nio.charset.Charset;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.Base64;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * JWT encoder.
@@ -28,7 +28,7 @@ public class JWTEncoder {
 	 * @param secret
 	 * @return
 	 */
-	public static String encode(JSONObject claims, String secret) {
+	public static String encode(ObjectNode claims, String secret) {
 		
 		String encodedHeader = getCommonHeader();
 		String encodedClaims = encodeJson(claims);
@@ -55,17 +55,17 @@ public class JWTEncoder {
 	}
 
 	private static String getCommonHeader() {
-		JSONObject headerJson = new JSONObject();
+    ObjectNode headerJson = new ObjectNode(JsonNodeFactory.instance);
 		try {
 			headerJson.put("typ", "JWT");
 			headerJson.put("alg", "HS256");
-		} catch (JSONException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return encodeJson(headerJson);
 	}
 	
-	private static String encodeJson(JSONObject jsonData) {
+	private static String encodeJson(ObjectNode jsonData) {
 		return Base64.encodeBase64URLSafeString(jsonData.toString().getBytes(UTF8_CHARSET));
 	}
 
